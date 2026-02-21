@@ -1,0 +1,252 @@
+<style type="text/css">
+code{
+  font-family: "Consolas", monospace;
+}
+pre{
+  border: 1px solid #ddd;
+  border-left: 3px solid #f36d33;
+  overflow: auto;
+  padding: 1em 1.5em;
+  display: block;
+}
+Blockquote{
+  border-left: 3px solid #d0d0d0;
+  padding-left: 0.5em;
+  margin-left:1em;
+}
+Blockquote p{
+  margin: 0;
+}
+table{
+  border:1px solid;
+  border-collapse:collapse;
+}
+th{  padding:5px;
+  border:1px solid;
+}
+td{
+  padding:5px;
+  border:1px solid;
+}
+</style>
+<h1>InnoSetup Scripts for Embarcadero RAD Studio<sup>©</sup> Components Installer</h1>
+<p><a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"/></a></p>
+<h2>A collection of InnoSetup Scripts to build a RAD Studio Setup for Delphi Packages of Components and Libraries of any types.</h2>
+<h3>Actual official version 1.2.2</h3>
+<p>Copyright <sup>©</sup> 2024-2026 Ethea S.r.l.</p>
+<p>Original Code is Copyright <sup>©</sup> 2021-2025 Skia4Delphi Project.</p>
+<p>Use of this source code is governed by the MIT license.</p>
+<p><img src="./SupportingDelphi.jpg" alt="./SupportingDelphi"/></p>
+<h2>Scope of this Scripts collection</h2>
+<p>Many developers of Delphi components/libraries release their sources on Git-Hub, providing instructions for manually installing the packages.</p>
+<p>Using these scripts for InnoSetup Compiler it is possible to create an &ldquo;automatic&rdquo; Setup capable of:</p>
+<ul>
+<li>Install the project in the folder selected by the user.</li>
+<li>Copy all the files of the project (Sources, resources, Packages, help&hellip;).</li>
+<li>Determine the versions of Delphi present on the machine.</li>
+<li>Compile the packages (dcp), creating the 32 and 64 Bit dcu.</li>
+<li>Install the Packages (bpl) in the CommonBplFolder of Delphi</li>
+<li>Create an environment variable</li>
+<li>Add search paths using the environment variable</li>
+</ul>
+<p>During an update, Setup is also capable to:</p>
+<ul>
+<li>Uninstall the previous version of the Packages (eventually from Get-It)</li>
+<li>Remove old sources and files</li>
+<li>Delete old .dcp and .bpl files from CommonBplFolder and CommonDcpFolder</li>
+<li>Proceed with the new Installation</li>
+</ul>
+<p>After the installation, the components/libraries are available into the IDE of Delphi and ready to use!</p>
+<h2>How to use</h2>
+<p>Prerequisites: download and install latest <a href="https://jrsoftware.org/download.php/is.exe?site=1">Inno Setup Compiler</a></p>
+<h3>Files preparation:</h3>
+<ol>
+<li>In your components/Library Project create a Setup Folder</li>
+<li>Clone this Repo into Setup/InnoSetupScripts</li>
+<li>Place the &ldquo;\Template\Setup.iss&rdquo; file into your Setup Folder</li>
+<li>Copy \Template*.bmp files into your Setup Folder (WizClassicImage.bmp and WizClassicSmallImage.bmp)</li>
+</ol>
+<p>Verify to have this structure:</p>
+<pre><code class="Shell">Setup
+│ Setup.iss
+│ WizClassicImage.bmp
+│ WizClassicSmallImage.bmp
+└─\InnoSetupScripts
+│ └─\Languages
+│     Default.isl
+│     Italian.isl
+│     ...
+└───\Scripts
+    │ Setup.Preprocessor.ClearFiles.bat
+└───\Source
+    │ Setup.Main.inc
+    │ RADStudio.inc
+    │ ...
+└───\Style
+    │ Amakrits.vsf
+    │ ...
+    │ YellowGraphite.vsf
+    │ Setup.Styles.dll
+</code></pre>
+<h3>Customize Setup:</h3>
+<ol>
+<li>Customize your graphics changing the content of the bitmaps WizClassicImage.bmp and WizClassicSmallImage.bmp</li>
+<li>Open &ldquo;Setup.iss&rdquo; with Inno Setup Compiler IDE and change values after &ldquo;TODO:&rdquo; lables</li>
+</ol>
+<h2>Prepare your Packages for Build</h2>
+<p>The Setup scripts automatically search in your Package folder all the packages to install, inside a GroupProject file.</p>
+<h3>Setup your Package Groups:</h3>
+<p>You must collect your packages in PackageGroups.</p>
+<p>Into every Package Group you must create a &ldquo;Build group&rdquo; called &ldquo;ALL&rdquo; in this way:</p>
+<ol>
+<li><p>Open the PackageGroup file (.groupproj)</p>
+</li>
+<li><p>Click tothe Icon &ldquo;Show Build Groups Pane&rdquo; in the toolbar</p>
+</li>
+<li><p>In the &ldquo;Build Groups Panel&rdquo;, click to the icon &ldquo;Create a new build group&rdquo;</p>
+</li>
+<li><p>Input &ldquo;ALL&rdquo; as the name of the Build Group</p>
+</li>
+<li><p>All of your packages are created and selected by default</p>
+</li>
+<li><p>Change the column &ldquo;Configurations&rdquo; to include Release (and also Debug if you want to provide also .dcu in debug mode)</p>
+</li>
+<li><p>Change the column &ldquo;Platforms&rdquo; to include Win64 (only for run-time packages)</p>
+</li>
+</ol>
+<p>This is an example of the &ldquo;Build Groups Panel&rdquo;:</p>
+<p><img src="./Build_Groups_Panel_Example.jpg" alt="Build_Groups_Panel_Example"/></p>
+<h3>WARNING:</h3>
+<p>Check in your .dproj xml file, if contains the correct &ldquo;ProjectVersion&rdquo; number, because the scripts use it to known the correct Delphi Version.</p>
+<p>for Example, for Delphi 11, ProjectVersion must be between 19.3 and 19.5.</p>
+<pre><code class="xml">&lt;Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
+    &lt;PropertyGroup&gt;
+        &lt;ProjectGuid&gt;{00000000-0000-0000-0000-000000000000}&lt;/ProjectGuid&gt;
+        &lt;MainSource&gt;PackageName.dpk&lt;/MainSource&gt;
+        &lt;ProjectVersion&gt;19.5&lt;/ProjectVersion&gt;
+</code></pre>
+<p>Use this table for the correct &ldquo;ProjectVersion&rdquo; of every Delphi versions:</p>
+<table>
+  <tr>
+    <th align="left">RAD Studio Version</th>
+    <th align="left">Min ProjectVersion</th>
+    <th align="left">Max ProjectVersion</th>
+    <th align="left">LibSuffix**</th>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio XE3</td>
+    <td align="left">14.0</td>
+    <td align="left">14.4</td>
+    <td align="left">170</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio XE6</td>
+    <td align="left">15.1</td>
+    <td align="left">15.4</td>
+    <td align="left">200</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio XE7</td>
+    <td align="left">16.0</td>
+    <td align="left">16.1</td>
+    <td align="left">210</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio XE8</td>
+    <td align="left">17.1</td>
+    <td align="left">17.2</td>
+    <td align="left">220</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 10.0 Seattle</td>
+    <td align="left">18.0</td>
+    <td align="left">18.1*</td>
+    <td align="left">230</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 10.1 Berlin</td>
+    <td align="left">18.1*</td>
+    <td align="left">18.2*</td>
+    <td align="left">240</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 10.2 Tokyo</td>
+    <td align="left">18.2*</td>
+    <td align="left">18.4</td>
+    <td align="left">250</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 10.3 Rio</td>
+    <td align="left">18.5</td>
+    <td align="left">18.8</td>
+    <td align="left">260</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 10.4 Sydney</td>
+    <td align="left">19.0</td>
+    <td align="left">19.2</td>
+    <td align="left">270 or $(Auto)</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 11 Alexandria</td>
+    <td align="left">19.3</td>
+    <td align="left">19.5</td>
+    <td align="left">280 or $(Auto)</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 12 Athens</td>
+    <td align="left">20.1</td>
+    <td align="left">20.3*</td>
+    <td align="left">290 or $(Auto)</td>
+  </tr>
+  <tr>
+    <td align="left">RAD Studio 13 Florence</td>
+    <td align="left">20.3*</td>
+    <td align="left">20.4</td>
+    <td align="left">370 or $(Auto)</td>
+  </tr>
+</table>
+<p>*In case of conflict the script searches for Package Version** (LibSuffix), so it is recommended to use &ldquo;standard&rdquo; Lib Suffix values.</p>
+<h3>How to distinguish RAD Studio 12 and RAD Studio 13:</h3>
+<p>It is recommended to use version 20.2 for RAD Studio 12 and version 20.4 for RAD Studio 13 to avoid the conflict of version 20.3 used by both Delphi 12.3 and Delphi 13.0</p>
+<h3>Other Delphi versions not included in the table:</h3>
+<p>If you need other versions not included in this table you must edit RADStudio.inc file to include them in:</p>
+<pre><code class="Pascal">procedure _InitializationUnitRADStudio
+</code></pre>
+<p>or open an Issue for support them.</p>
+<h2>Compile and Run Installer</h2>
+<p>Build and Run Setup.iss to check your installation and debug the Setup.</p>
+<p>Check your &ldquo;graphics&rdquo; in first page (WizClassicImage.bmp) and in another pages (WizClassicSmallImage.bmp)</p>
+<p>Check if the Setup acquire your Delphi versions available.</p>
+<p><img src="./Setup.png" alt="Setup"/></p>
+<p>If you have some problems to Build and install packages read carefully the log provided by the installer.</p>
+<p>After the installation check your Evironment Variable in Delphi IDE and Search Paths added by the installer.</p>
+<h1>License</h1>
+<h3>Copyright <sup>©</sup> 2024-2026 Ethea S.r.l.</h3>
+<p>License <a href="https://github.com/skia4delphi/skia4delphi?tab=MIT-1-ov-file">MIT-License</a></p>
+<h3>The original author of the Scripts are: Skia4Delphi Library by <a href="https://skia4delphi.org/">the authors</a></h3>
+<p>License <a href="https://github.com/skia4delphi/skia4delphi?tab=MIT-1-ov-file">MIT-License</a></p>
+<h3>RELEASE NOTES</h3>
+<p>21 Feb 2026: version 1.2.2</p>
+<ul>
+<li>Support for Delphi 13.1</li>
+</ul>
+<p>1 Jan 2026: version 1.2.1</p>
+<ul>
+<li>Updated Copyright 2026</li>
+</ul>
+<p>18 Aug 2025: version 1.2.0</p>
+<ul>
+<li>Added support for RAD Studio 13.0</li>
+</ul>
+<p>27 Feb 2025: version 1.1.0</p>
+<ul>
+<li>Added support to build design-time 64bit Packages for Delphi 12.3</li>
+<li>Added support for RAD Studio 12.3</li>
+</ul>
+<p>2 Jan 2025: version 1.0.0</p>
+<ul>
+<li>Added support for bpl packages built in RAD Studio Common Bpl Folders</li>
+<li>Added various Styles form customization of Setup</li>
+<li>Added Italian language translation</li>
+</ul>

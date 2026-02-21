@@ -3,7 +3,7 @@
 {                                                                        }
 { Ethea InnoSetup Tools Library                                          }
 {                                                                        }
-{ Copyright (c) 2024-2025 Ethea S.r.l.                                   }
+{ Copyright (c) 2024-2026 Ethea S.r.l.                                   }
 {                                                                        }
 { Original Code is Copyright (c) 2021-2024 Skia4Delphi Project.          }
 {                                                                        }
