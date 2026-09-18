@@ -8,7 +8,7 @@
 {                                                                        }
 { Copyright (c) 2024-2026 Ethea S.r.l.                                   }
 {                                                                        }
-{ Original Code is Copyright (c) 2021-2025 Skia4Delphi Project.          }
+{ Original Code is Copyright (c) 2021-2026 Skia4Delphi Project.          }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -26,7 +26,7 @@
 {                    VCL Styles Plugin for Inno Setup                    }
 {               https://github.com/RRUZ/vcl-styles-plugins               }
 {                                                                        }
-{ Copyright (c) 2013-2025 Rodrigo Ruz V.                                 }
+{ Copyright (c) 2013-2026 Rodrigo Ruz V.                                 }
 {                                                                        }
 { Use of this source code is governed by a MPL 1.1 license that can be   }
 { found at http://www.mozilla.org/MPL/                                   }
@@ -87,7 +87,11 @@ function _SetupStyleInitializeUninstall: Boolean;
 begin
   _FIsUsingVclStyles := False;
   if (not IsVerySilent) and
+    #if Ver >= EncodeVer(6,4,0)
+    CopyFile(ExpandConstant('{app}\{#SetupFolder}\{#_StyleSubDir}\{#_StylesDllName}'), ExpandConstant('{tmp}\{#_StylesDllName}'), False) and
+    #else
     FileCopy(ExpandConstant('{app}\{#SetupFolder}\{#_StyleSubDir}\{#_StylesDllName}'), ExpandConstant('{tmp}\{#_StylesDllName}'), False) and
+    #endif
     FileExists(CombinePath(ExpandConstant('{app}'), '{#SetupFolder}\{#_StyleSubDir}\{#VclStyle}')) then
   begin
     _DllLoadVclStyleUninstall(CombinePath(ExpandConstant('{app}'), '{#SetupFolder}\{#_StyleSubDir}\{#VclStyle}'));

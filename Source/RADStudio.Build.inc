@@ -8,7 +8,7 @@
 {                                                                        }
 { Copyright (c) 2024-2026 Ethea S.r.l.                                   }
 {                                                                        }
-{ Original Code is Copyright (c) 2021-2025 Skia4Delphi Project.          }
+{ Original Code is Copyright (c) 2021-2026 Skia4Delphi Project.          }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -26,7 +26,7 @@ type
   TBeforeProjectBuildFunc = function(const AProject: TRADStudioProject; const APlatform: TProjectPlatform; const AInfo: TRADStudioInfo): Boolean;
   TTryExtractPreBuildObjectsProc = function(const AInfo: TRADStudioInfo): Boolean;
 
-/// <summary> Get platforms that are allowed to build in specific platform. Current, allowed only windows platforms to avoid problems with sdk. </summary>
+/// <summary> Get platforms that are allowed to build in specific platform. Current, allowed only Windows platforms to avoid problems with SDK. </summary>
 function GetPlatformsAllowedToBuild(const ARADStudioInfo: TRADStudioInfo): TProjectPlatforms; forward;
 /// <summary> Get steps of TryBuildRADStudioPackages used in WizardForm.ProgressGauge.Position. Use this to set WizardForm.ProgressGauge.Max before call the TryBuildRADStudioPackages. </summary>
 function GetTryBuildRADStudioPackagesSteps(const ARADStudioInfos: TRADStudioInfos; const AGroupProjects: TRADStudioGroupProjects): Integer; forward;
@@ -58,7 +58,7 @@ end;
 
 function GetPlatformsAllowedToBuild(const ARADStudioInfo: TRADStudioInfo): TProjectPlatforms;
 begin
-  Result := [pfWin32, pfWin64];
+  Result := [pfWin32, pfWin64, pfWin64x, pfWinARM64EC];
 end;
 
 function GetTryBuildRADStudioPackagesSteps(const ARADStudioInfos: TRADStudioInfos; const AGroupProjects: TRADStudioGroupProjects): Integer;
@@ -119,12 +119,12 @@ begin
           LProject := AGroupProjects[J].Items[K].Project;
           if TryGetRADStudioVersionOfProject(LProject, LVersion) and (CompareRADStudioVersions(LVersion, LInfo.Version) = 0) and (LPlatform in LProject.Platforms) then
           begin
-            Log(Format('RADStudio.Build.TryBuildRADStudioPackages: Trying to build the package "%s" to %s platform for %s', [LProject.FileName, GetProjectPlatformName(LPlatform), LInfo.Version.Name]));
+            Log(Format('RADStudio.Build.TryBuildRADStudioPackages: Trying to build the package "%s" to %s platform for %s', [ExtractFileName(LProject.FileName), GetProjectPlatformName(LPlatform), LInfo.Version.Name]));
             WizardForm.StatusLabel.Caption := FmtMessage(CustomMessage('RADStudioBuildBuildingFor'), [LInfo.Version.Name, GetProjectPlatformName(LPlatform)]);
             WizardForm.FilenameLabel.Caption := ExtractFileName(LProject.FileName);
             if (LInfo.Status = riToolchainNotSupported) or (not _TryBuildRADStudioProject(LInfo, LInfo.BuildConfig, LPlatform, LProject, ACustomParameter, ExpandConstant(_BuilLogsFileName), ABeforeProjectBuild, LResultCode)) then
             begin
-              Log(Format('RADStudio.Build.TryBuildRADStudioPackages: Failed to build the package "%s" to %s platform for %s', [LProject.FileName, GetProjectPlatformName(LPlatform), LInfo.Version.Name]));
+              Log(Format('RADStudio.Build.TryBuildRADStudioPackages: Failed to build the package "%s" to %s platform for %s', [ExtractFileName(LProject.FileName), GetProjectPlatformName(LPlatform), LInfo.Version.Name]));
               if (ATryExtractPreBuildObjects <> nil) and ATryExtractPreBuildObjects(LInfo) then
               begin
                 Log(Format('RADStudio.Build.TryBuildRADStudioPackages: Extracted pre-build objects for %s', [LInfo.Version.Name]));
@@ -132,6 +132,7 @@ begin
               end
               else
               begin
+                Log(Format('RADStudio.Build.TryBuildRADStudioPackages: Failed to extract pre-build objects for %s', [LInfo.Version.Name]));
                 if LInfo.Status = riToolchainNotSupported then
                   TryShowErrorFmt(CustomMessage('RADStudioBuildErrorNotSupportCommandLineBuild'), [LInfo.Version.Name])
                 else
@@ -185,7 +186,7 @@ begin
     end
     else
       Log(Format('RADStudio.Build._TryBuildRADStudioProject: Skipped Build of Package "%s"', [AProject.FileName]));
-  end;          
+  end;
 end;
 
 function _TryGetBuildCommand(const ARADStudioInfo: TRADStudioInfo; const AConfig: TProjectConfig; const APlatform: TProjectPlatform; const AProjectFileName, ACustomParameter, ALogFileName: string; out ACommand: string): Boolean;

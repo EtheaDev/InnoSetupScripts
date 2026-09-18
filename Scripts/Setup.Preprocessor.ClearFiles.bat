@@ -9,6 +9,11 @@ rem # Use of this source code is governed by the MIT license that can be
 rem # found in the LICENSE file.
 rem #
 
+echo Cleaning Library Path (Library)...
+for /f "tokens=* delims=" %%i in ('dir "..\..\..\Library\" /s /b /a:-d ^| find /v "\Win32\Release\" ^| find /v "\Win64\Release\" ^| find /v "\WinARM64EC\Release\"') do (
+  echo Deleting "%%i"
+  del "%%i"
+
 echo Cleaning Library Path (Lib)...
 for /f "tokens=* delims=" %%i in ('dir "..\..\..\Lib\" /s /b /a:-d ^| find /v "\Win32\Release\" ^| find /v "\Win64\Release\"') do (
   echo Deleting "%%i"

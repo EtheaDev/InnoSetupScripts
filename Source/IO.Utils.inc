@@ -8,7 +8,7 @@
 {                                                                        }
 { Copyright (c) 2024-2026 Ethea S.r.l.                                   }
 {                                                                        }
-{ Original Code is Copyright (c) 2021-2025 Skia4Delphi Project.          }
+{ Original Code is Copyright (c) 2021-2026 Skia4Delphi Project.          }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -75,7 +75,11 @@ begin
       LDestFileName := CombinePath(LDestFilePath, ExtractFileName(LFiles[I]));
       if (not AOverwriteExisting) and FileExists(LDestFileName) then
         Continue;
+      #if Ver >= EncodeVer(6,4,0)
+      Result := CopyFile(LFiles[I], LDestFileName, not AOverwriteExisting);
+      #else
       Result := FileCopy(LFiles[I], LDestFileName, not AOverwriteExisting);
+      #endif
       if not Result then
       begin
         Log(Format('IO.Utils.CopyDirectory: Failed to copy the file "%s" to "%s".', [LFiles[I], LDestFileName]));
@@ -90,7 +94,11 @@ end;
 function CopyFileToDir(const AFileName, ADestPath: string): Boolean;
 begin
   Result := FileExists(AFileName) and (DirExists(ADestPath) or ForceDirectories(ADestPath)) and
+    #if Ver >= EncodeVer(6,4,0)
+    CopyFile(AFileName, CombinePath(ADestPath, ExtractFileName(AFileName)), False);
+    #else
     FileCopy(AFileName, CombinePath(ADestPath, ExtractFileName(AFileName)), False);
+    #endif
 end;
 
 function GetFiles(APath, AFileName: string; const ASearchOption: TSearchOption): TArrayOfString;

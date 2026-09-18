@@ -8,7 +8,7 @@
 {                                                                        }
 { Copyright (c) 2024-2026 Ethea S.r.l.                                   }
 {                                                                        }
-{ Original Code is Copyright (c) 2021-2025 Skia4Delphi Project.          }
+{ Original Code is Copyright (c) 2021-2026 Skia4Delphi Project.          }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -140,6 +140,8 @@ function _SortRADStudioVersions(AVersions: _TRADStudioVersions): _TRADStudioVers
 /// <summary> Try to add a path to the Library registry (in a specific registry name) of the RAD Studio </summary>
 function _TryAddRADStudioLibraryPath(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const ARegName, APath: string;
   const APos: Integer): Boolean; forward;
+/// <summary> Check if the RAD Studio version has a 64-bit IDE (Delphi 12+) </summary>
+function _HasRADStudio64BitIDE(const ARADStudioVersion: TRADStudioVersion): Boolean; forward;
 /// <summary> Try to get the RADStudio environment variable </summary>
 function _TryGetRADStudioEnvVar(const ARADStudioVersion: TRADStudioVersion; const AName: string; out AValue: string): Boolean; forward;
 /// <summary> Try to get the RADStudio installations info </summary>
@@ -605,7 +607,7 @@ begin
   LRADStudioVersion.RegVersion := '23.0';
   LRADStudioVersion.SupportedPlatformsDelphi := [pfWin32, pfWin64, pfWin64x, pfAndroid, pfAndroid64, pfiOSDevice64, pfiOSSimARM64, pfOSX64, pfOSXARM64, pfLinux64];
   LRADStudioVersion.SupportedPlatforms := LRADStudioVersion.SupportedPlatformsDelphi;
-  LRADStudioVersion.MaxDprojVersion := '20.2'; // don't use 20.3 IN Delphi 12 packages, because conflicts with RAD Studio 13.0
+  LRADStudioVersion.MaxDprojVersion := '20.3';
   LRADStudioVersion.MinDprojVersion := '20.1';
   LRADStudioVersion.PackageVersion := '290';
   LRADStudioVersion.OldLibSuffix := 'D12';
@@ -620,10 +622,10 @@ begin
   // RAD Studio 13 Florence
   LRADStudioVersion.Name := 'RAD Studio 13 Florence';
   LRADStudioVersion.RegVersion := '37.0';
-  LRADStudioVersion.SupportedPlatformsDelphi := [pfWin32, pfWin64, pfWin64x, pfAndroid, pfAndroid64, pfiOSDevice64, pfiOSSimARM64, pfOSX64, pfOSXARM64, pfLinux64];
+  LRADStudioVersion.SupportedPlatformsDelphi := [pfWin32, pfWin64, pfWin64x, pfWinARM64EC, pfAndroid, pfAndroid64, pfiOSDevice64, pfiOSSimARM64, pfOSX64, pfOSXARM64, pfLinux64];
   LRADStudioVersion.SupportedPlatforms := LRADStudioVersion.SupportedPlatformsDelphi;
-  LRADStudioVersion.MaxDprojVersion := '20.4'; // Reccomend to use it for RAD Studio 13.1
-  LRADStudioVersion.MinDprojVersion := '20.3'; // 20.3 Conflicted with RAD Studio 12.3
+  LRADStudioVersion.MaxDprojVersion := '20.5'; // Reccomend to use it for RAD Studio 13.2, 13.1 and 13
+  LRADStudioVersion.MinDprojVersion := '20.4'; // don't use 20.3 IN Delphi 13 packages, because conflicts with latest RAD Studio 12
   LRADStudioVersion.PackageVersion := '370';
   LRADStudioVersion.OldLibSuffix := 'D13';  
   LRADStudioVersion.HasGetItCmd := True;
@@ -692,11 +694,23 @@ begin
   Result := LResult;
 end;
 
+function _HasRADStudio64BitIDE(const ARADStudioVersion: TRADStudioVersion): Boolean;
+var
+  LValue: string;
+begin
+  Result := RegQueryStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion), 'App x64', LValue) and (LValue <> '');
+end;
+
 function TryAddRADStudioEnvVariable(const ARADStudioVersion: TRADStudioVersion; const AName, AValue: string): Boolean;
 begin
   Result := RegWriteStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables', AName, AValue);
   if not Result then
     Log(Format('RADStudio.TryAddRADStudioEnvVariable: Failed to add an environment variable to the RAD Studio registry (Name: "%s", Value: "%s")', [AName, AValue]));
+  if _HasRADStudio64BitIDE(ARADStudioVersion) then
+  begin
+    if not RegWriteStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', AName, AValue) then
+      Log(Format('RADStudio.TryAddRADStudioEnvVariable: Failed to add an environment variable to the RAD Studio x64 registry (Name: "%s", Value: "%s")', [AName, AValue]));
+  end;
 end;
 
 function TryAddRADStudioLibraryBrowsingPath(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const APath: string;
@@ -771,6 +785,17 @@ begin
   end;
   if not Result then
     Log(Format('RADStudio.TryAddRADStudioPathEnvVariable: Failed to add a path environment variable to the RAD Studio registry (Path: "%s")', [APath]));
+  if _HasRADStudio64BitIDE(ARADStudioVersion) then
+  begin
+    if (not RegQueryStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', 'PATH', LValue)) or (LValue = '') then
+      LValue := '$(PATH)';
+    LPaths := RemoveString(SplitString(LValue, ';'), APath, False);
+    LPaths := RemoveString(LPaths, APath + '\', False);
+    LPaths := InsertStringAtBeginning(LPaths, APath);
+    LValue := JoinStrings(LPaths, ';', False);
+    if not RegWriteStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', 'PATH', LValue) then
+      Log(Format('RADStudio.TryAddRADStudioPathEnvVariable: Failed to add a path environment variable to the RAD Studio x64 registry (Path: "%s")', [APath]));
+  end;
 end;
 
 function TryGetMaxRADStudioVersionInGroupProjects(const AGroupProjects: TRADStudioGroupProjects; out ARADStudioVersion: TRADStudioVersion): Boolean;
@@ -1074,6 +1099,12 @@ begin
     RegDeleteValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables', AName);
   if not Result then
     Log(Format('RADStudio.TryRemoveRADStudioEnvVariable: Failed to remove an environment variable to the RAD Studio registry (Name: "%s"; Registry: "%s").', [AName, 'HKEY_CURRENT_USER\' + GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables']));
+  if _HasRADStudio64BitIDE(ARADStudioVersion) then
+  begin
+    if RegValueExists(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', AName) and
+      not RegDeleteValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', AName) then
+      Log(Format('RADStudio.TryRemoveRADStudioEnvVariable: Failed to remove an environment variable from the RAD Studio x64 registry (Name: "%s"; Registry: "%s").', [AName, 'HKEY_CURRENT_USER\' + GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64']));
+  end;
 end;
 
 function TryRemoveRADStudioLibraryBrowsingPath(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const APath: string): Boolean;
@@ -1140,6 +1171,19 @@ begin
     if not Result then
       Log(Format('RADStudio.TryRemoveRADStudioPathEnvVariable: Failed to remove a path environment variable to the RAD Studio registry (Path: "%s"). The registry "%s" does not exist.', [APath, 'HKEY_CURRENT_USER\' + GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables']));
   end;
+  if _HasRADStudio64BitIDE(ARADStudioVersion) then
+  begin
+    if RegValueExists(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', 'PATH') then
+    begin
+      if (not RegQueryStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', 'PATH', LValue)) or (LValue = '') then
+        LValue := '$(PATH)';
+      LPaths := RemoveString(SplitString(LValue, ';'), APath, False);
+      LPaths := RemoveString(LPaths, APath + '\', False);
+      LValue := JoinStrings(LPaths, ';', False);
+      if not RegWriteStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64', 'PATH', LValue) then
+        Log(Format('RADStudio.TryRemoveRADStudioPathEnvVariable: Failed to remove a path environment variable from the RAD Studio x64 registry (Path: "%s"). Cannot possible to write the value PATH in registry "%s"', [APath, 'HKEY_CURRENT_USER\' + GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables x64']));
+    end;
+  end;
 end;
 
 function TryUnregisterRADStudioBpl(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const ABplFileName: string): Boolean;
@@ -1162,7 +1206,7 @@ begin
         if not RegDeleteValue(HKEY_CURRENT_USER, GetRADStudioRegKey(ARADStudioVersion) + LNode, LRegisteredBpls[I]) then
         begin
           Result := False;
-          Log(Format('RADStudio.TryUnregisterRADStudioBpl: Failed to unregister the bpl "%s". Cannot delete the value "%s" from registry "%s"', [ABplFileName, LRegisteredBpls[I], 'HKEY_CURRENT_USER' + GetRADStudioRegKey(ARADStudioVersion) + LNode]));
+          Log(Format('RADStudio.TryUnregisterRADStudioBpl: Failed to unregister the bpl "%s". Cannot possible to delete the value "%s" from registry "%s"', [ABplFileName, LRegisteredBpls[I], 'HKEY_CURRENT_USER' + GetRADStudioRegKey(ARADStudioVersion) + LNode]));
         end;
       end;  
     end;

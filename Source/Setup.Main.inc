@@ -8,7 +8,7 @@
 {                                                                        }
 { Copyright (c) 2024-2026 Ethea S.r.l.                                   }
 {                                                                        }
-{ Original Code is Copyright (c) 2021-2025 Skia4Delphi Project.          }
+{ Original Code is Copyright (c) 2021-2026 Skia4Delphi Project.          }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -47,7 +47,7 @@ function InitializeSetup: Boolean; forward;
 procedure InitializeWizard; forward;
 /// <summary> Install the packages </summary>
 function InstallPackages(const ARADStudioInfos: TRADStudioInfos; const AGroupProjects: TRADStudioGroupProjects; const ABeforeProjectBuild: TBeforeProjectBuildFunc): Boolean; forward;
-/// <summary> Check if the setup can create the uninstall registry key to be able to uninstall in windows settings. This reg key can be disabled by executing the setup with the parameter /CreateUninstallRegKey=no </summary>
+/// <summary> Check if the setup can create the uninstall registry key to be able to uninstall in Windows settings. This reg key can be disabled by executing the setup with the parameter /CreateUninstallRegKey=no </summary>
 function NeedsUninstallRegKey: Boolean; forward;
 /// <summary> [Event] Called to determine whether or not a particular page should be shown at all </summary>
 function ShouldSkipPage(APageID: Integer): Boolean; forward;

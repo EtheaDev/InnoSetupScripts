@@ -1,4 +1,11 @@
 <style type="text/css">
+body{
+  font-family: Arial, Helvetica, sans-serif;
+}
+img{
+  max-width: 100%;
+  height: auto;
+}
 code{
   font-family: "Consolas", monospace;
 }
@@ -32,9 +39,9 @@ td{
 <h1>InnoSetup Scripts for Embarcadero RAD Studio<sup>©</sup> Components Installer</h1>
 <p><a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"/></a></p>
 <h2>A collection of InnoSetup Scripts to build a RAD Studio Setup for Delphi Packages of Components and Libraries of any types.</h2>
-<h3>Actual official version 1.2.2</h3>
+<h3>Actual official version 1.2.5</h3>
 <p>Copyright <sup>©</sup> 2024-2026 Ethea S.r.l.</p>
-<p>Original Code is Copyright <sup>©</sup> 2021-2025 Skia4Delphi Project.</p>
+<p>Original Code is Copyright <sup>©</sup> 2021-2026 Skia4Delphi Project.</p>
 <p>Use of this source code is governed by the MIT license.</p>
 <p><img src="./SupportingDelphi.jpg" alt="./SupportingDelphi"/></p>
 <h2>Scope of this Scripts collection</h2>
@@ -67,27 +74,29 @@ td{
 <li>Copy \Template*.bmp files into your Setup Folder (WizClassicImage.bmp and WizClassicSmallImage.bmp)</li>
 </ol>
 <p>Verify to have this structure:</p>
-<pre><code class="Shell">Setup
-│ Setup.iss
-│ WizClassicImage.bmp
-│ WizClassicSmallImage.bmp
-└─\InnoSetupScripts
-│ └─\Languages
-│     Default.isl
-│     Italian.isl
-│     ...
-└───\Scripts
-    │ Setup.Preprocessor.ClearFiles.bat
-└───\Source
-    │ Setup.Main.inc
-    │ RADStudio.inc
-    │ ...
-└───\Style
-    │ Amakrits.vsf
-    │ ...
-    │ YellowGraphite.vsf
-    │ Setup.Styles.dll
+<div style="font-family: Arial, 'Courier New', monospace; font-size: 12pt;  background-color: #191D22; color: #FFFFFF;">
+<pre><code><span>Setup</span>
+<span style="color: #D4D4D4; ">│</span><span> Setup.iss</span>
+<span style="color: #D4D4D4; ">│</span><span> WizClassicImage.bmp</span>
+<span style="color: #D4D4D4; ">│</span><span> WizClassicSmallImage.bmp</span>
+<span style="color: #D4D4D4; ">└─\</span><span>InnoSetupScripts</span>
+<span style="color: #D4D4D4; ">│</span><span> </span><span style="color: #D4D4D4; ">└─\</span><span>Languages</span>
+<span style="color: #D4D4D4; ">│</span><span>     Default.isl</span>
+<span style="color: #D4D4D4; ">│</span><span>     Italian.isl</span>
+<span style="color: #D4D4D4; ">│</span><span>     </span><span style="color: #D4D4D4; ">...
+└───\</span><span>Scripts
+    </span><span style="color: #D4D4D4; ">│</span><span> Setup.Preprocessor.ClearFiles.bat</span>
+<span style="color: #D4D4D4; ">└───\</span><span>Source
+    </span><span style="color: #D4D4D4; ">│</span><span> Setup.Main.inc
+    </span><span style="color: #D4D4D4; ">│</span><span> RADStudio.inc
+    </span><span style="color: #D4D4D4; ">│</span><span> </span><span style="color: #D4D4D4; ">...
+└───\</span><span>Style
+    </span><span style="color: #D4D4D4; ">│</span><span> Amakrits.vsf
+    </span><span style="color: #D4D4D4; ">│</span><span> </span><span style="color: #D4D4D4; ">...</span>
+<span>    </span><span style="color: #D4D4D4; ">│</span><span> YellowGraphite.vsf
+    </span><span style="color: #D4D4D4; ">│</span><span> Setup.Styles.dll</span>
 </code></pre>
+</div>
 <h3>Customize Setup:</h3>
 <ol>
 <li>Customize your graphics changing the content of the bitmaps WizClassicImage.bmp and WizClassicSmallImage.bmp</li>
@@ -119,12 +128,14 @@ td{
 <h3>WARNING:</h3>
 <p>Check in your .dproj xml file, if contains the correct &ldquo;ProjectVersion&rdquo; number, because the scripts use it to known the correct Delphi Version.</p>
 <p>for Example, for Delphi 11, ProjectVersion must be between 19.3 and 19.5.</p>
-<pre><code class="xml">&lt;Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
-    &lt;PropertyGroup&gt;
-        &lt;ProjectGuid&gt;{00000000-0000-0000-0000-000000000000}&lt;/ProjectGuid&gt;
-        &lt;MainSource&gt;PackageName.dpk&lt;/MainSource&gt;
-        &lt;ProjectVersion&gt;19.5&lt;/ProjectVersion&gt;
+<div style="font-family: Arial, 'Courier New', monospace; font-size: 12pt;  background-color: #191D22; color: #FFFFFF;">
+<pre><code><span style="color: #D4D4D4; ">&lt;</span><span style="color: #BF7F7F; font-weight: bold; ">Project</span><span> </span><span style="color: #FF7F7F; ">xmlns</span><span style="color: #D4D4D4; ">=&quot;</span><span style="color: #FF7F7F; font-weight: bold; ">http://schemas.microsoft.com/developer/msbuild/2003</span><span style="color: #D4D4D4; ">&quot;&gt;</span>
+<span style="color: #7F7F7F; font-weight: bold; ">    </span><span style="color: #D4D4D4; ">&lt;</span><span style="color: #BF7F7F; font-weight: bold; ">PropertyGroup</span><span style="color: #D4D4D4; ">&gt;</span>
+<span style="color: #7F7F7F; font-weight: bold; ">        </span><span style="color: #D4D4D4; ">&lt;</span><span style="color: #BF7F7F; font-weight: bold; ">ProjectGuid</span><span style="color: #D4D4D4; ">&gt;</span><span style="color: #7F7F7F; font-weight: bold; ">{00000000-0000-0000-0000-000000000000}</span><span style="color: #D4D4D4; ">&lt;/</span><span style="color: #BF7F7F; font-weight: bold; ">ProjectGuid</span><span style="color: #D4D4D4; ">&gt;</span>
+<span style="color: #7F7F7F; font-weight: bold; ">        </span><span style="color: #D4D4D4; ">&lt;</span><span style="color: #BF7F7F; font-weight: bold; ">MainSource</span><span style="color: #D4D4D4; ">&gt;</span><span style="color: #7F7F7F; font-weight: bold; ">PackageName.dpk</span><span style="color: #D4D4D4; ">&lt;/</span><span style="color: #BF7F7F; font-weight: bold; ">MainSource</span><span style="color: #D4D4D4; ">&gt;</span>
+<span style="color: #7F7F7F; font-weight: bold; ">        </span><span style="color: #D4D4D4; ">&lt;</span><span style="color: #BF7F7F; font-weight: bold; ">ProjectVersion</span><span style="color: #D4D4D4; ">&gt;</span><span style="color: #7F7F7F; font-weight: bold; ">19.5</span><span style="color: #D4D4D4; ">&lt;/</span><span style="color: #BF7F7F; font-weight: bold; ">ProjectVersion</span><span style="color: #D4D4D4; ">&gt;</span>
 </code></pre>
+</div>
 <p>Use this table for the correct &ldquo;ProjectVersion&rdquo; of every Delphi versions:</p>
 <table>
   <tr>
@@ -196,23 +207,26 @@ td{
   <tr>
     <td align="left">RAD Studio 12 Athens</td>
     <td align="left">20.1</td>
-    <td align="left">20.3*</td>
+    <td align="left">20.3</td>
     <td align="left">290 or $(Auto)</td>
   </tr>
   <tr>
     <td align="left">RAD Studio 13 Florence</td>
-    <td align="left">20.3*</td>
     <td align="left">20.4</td>
+    <td align="left">20.5</td>
     <td align="left">370 or $(Auto)</td>
   </tr>
 </table>
+<br/>
 <p>*In case of conflict the script searches for Package Version** (LibSuffix), so it is recommended to use &ldquo;standard&rdquo; Lib Suffix values.</p>
 <h3>How to distinguish RAD Studio 12 and RAD Studio 13:</h3>
-<p>It is recommended to use version 20.2 for RAD Studio 12 and version 20.4 for RAD Studio 13 to avoid the conflict of version 20.3 used by both Delphi 12.3 and Delphi 13.0</p>
+<p>It is recommended to use version 20.3 for RAD Studio 12 and version greather than 20.3 for RAD Studio 13 to avoid the conflict of version 20.3 used by both Delphi 12.3 and Delphi 13.0</p>
 <h3>Other Delphi versions not included in the table:</h3>
 <p>If you need other versions not included in this table you must edit RADStudio.inc file to include them in:</p>
-<pre><code class="Pascal">procedure _InitializationUnitRADStudio
+<div style="font-family: Arial, 'Courier New', monospace; font-size: 12pt;  background-color: #191D22; color: #FFFFFF;">
+<pre><code><span style="color: #569CD6; font-weight: bold; ">procedure</span><span> _InitializationUnitRADStudio</span>
 </code></pre>
+</div>
 <p>or open an Issue for support them.</p>
 <h2>Compile and Run Installer</h2>
 <p>Build and Run Setup.iss to check your installation and debug the Setup.</p>
@@ -227,6 +241,15 @@ td{
 <h3>The original author of the Scripts are: Skia4Delphi Library by <a href="https://skia4delphi.org/">the authors</a></h3>
 <p>License <a href="https://github.com/skia4delphi/skia4delphi?tab=MIT-1-ov-file">MIT-License</a></p>
 <h3>RELEASE NOTES</h3>
+<p>18 Sep 2026: version 1.2.4</p>
+<ul>
+<li>Support for Delphi 13.2</li>
+</ul>
+<p>20 Mar 2026: version 1.2.3</p>
+<ul>
+<li>Support for Win64x and WinARM64EC platforms</li>
+<li>Fixed Environment Variables registration for 64-bit IDE (Delphi 12+)</li>
+</ul>
 <p>21 Feb 2026: version 1.2.2</p>
 <ul>
 <li>Support for Delphi 13.1</li>
