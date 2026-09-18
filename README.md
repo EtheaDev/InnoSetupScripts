@@ -4,7 +4,7 @@
 
 ## A collection of InnoSetup Scripts to build a RAD Studio Setup for Delphi Packages of Components and Libraries of any types.
 
-### Actual official version 1.2.5
+### Actual official version 1.2.4
 
 Copyright <sup>©</sup> 2024-2026 Ethea S.r.l.
 
