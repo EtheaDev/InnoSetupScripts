@@ -4,7 +4,7 @@
 
 ## A collection of InnoSetup Scripts to build a RAD Studio Setup for Delphi Packages of Components and Libraries of any types.
 
-### Actual official version 1.2.4
+### Actual official version 1.2.5
 
 Copyright <sup>©</sup> 2024-2026 Ethea S.r.l.
 
@@ -177,6 +177,10 @@ License [MIT-License](https://github.com/skia4delphi/skia4delphi?tab=MIT-1-ov-fi
 License [MIT-License](https://github.com/skia4delphi/skia4delphi?tab=MIT-1-ov-file)
 
 ### RELEASE NOTES
+29 Sep 2026: version 1.2.5
+- Fixed packages requiring a third-party .dcp (e.g. Skia4Delphi) failing to build with E2202 "Required package not found" while the same package builds in the IDE: MSBuild takes the library path from EnvOptions.proj (rewritten by the IDE only when its options are saved), so a stale file hid the third-party folder. The build now passes the IDE Library Path read from the registry as the DelphiLibraryPath global property (response file), with $(Platform), $(Config), the RAD Studio variables of environment.proj and the IDE-only environment variables expanded, and unresolved entries dropped
+- Fixed MSB6001 "odd number of double-quote characters" when a library path entry ends with a backslash (quotes and trailing backslashes are now removed from every entry)
+
 18 Sep 2026: version 1.2.4
 - Support for Delphi 13.2
 

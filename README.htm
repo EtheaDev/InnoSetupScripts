@@ -39,7 +39,7 @@ td{
 <h1>InnoSetup Scripts for Embarcadero RAD Studio<sup>©</sup> Components Installer</h1>
 <p><a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"/></a></p>
 <h2>A collection of InnoSetup Scripts to build a RAD Studio Setup for Delphi Packages of Components and Libraries of any types.</h2>
-<h3>Actual official version 1.2.4</h3>
+<h3>Actual official version 1.2.5</h3>
 <p>Copyright <sup>©</sup> 2024-2026 Ethea S.r.l.</p>
 <p>Original Code is Copyright <sup>©</sup> 2021-2026 Skia4Delphi Project.</p>
 <p>Use of this source code is governed by the MIT license.</p>
@@ -241,6 +241,11 @@ td{
 <h3>The original author of the Scripts are: Skia4Delphi Library by <a href="https://skia4delphi.org/">the authors</a></h3>
 <p>License <a href="https://github.com/skia4delphi/skia4delphi?tab=MIT-1-ov-file">MIT-License</a></p>
 <h3>RELEASE NOTES</h3>
+<p>29 Sep 2026: version 1.2.5</p>
+<ul>
+<li>Fixed packages requiring a third-party .dcp (e.g. Skia4Delphi) failing to build with E2202 &ldquo;Required package not found&rdquo; while the same package builds in the IDE: MSBuild takes the library path from EnvOptions.proj (rewritten by the IDE only when its options are saved), so a stale file hid the third-party folder. The build now passes the IDE Library Path read from the registry as the DelphiLibraryPath global property (response file), with $(Platform), $(Config), the RAD Studio variables of environment.proj and the IDE-only environment variables expanded, and unresolved entries dropped</li>
+<li>Fixed MSB6001 &ldquo;odd number of double-quote characters&rdquo; when a library path entry ends with a backslash (quotes and trailing backslashes are now removed from every entry)</li>
+</ul>
 <p>18 Sep 2026: version 1.2.4</p>
 <ul>
 <li>Support for Delphi 13.2</li>

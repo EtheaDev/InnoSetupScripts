@@ -48,12 +48,49 @@ function _GetMSBuildParams(const AConfig: TProjectConfig; const APlatform: TProj
 function _TryBuildRADStudioProject(const ARADStudioInfo: TRADStudioInfo; const AConfig: TProjectConfig; const APlatform: TProjectPlatform; const AProject: TRADStudioProject; const ACustomParameter, ALogFileName: string; const ABeforeProjectBuild: TBeforeProjectBuildFunc; out AResultCode: Integer): Boolean; forward;
 /// <summary> Try to get the comand to build a project. The custom parameter is optionally. </summary>
 function _TryGetBuildCommand(const ARADStudioInfo: TRADStudioInfo; const AConfig: TProjectConfig; const APlatform: TProjectPlatform; const AProjectFileName, ACustomParameter, ALogFileName: string; out ACommand: string): Boolean; forward;
+/// <summary> Write the MSBuild response file that sets DelphiLibraryPath to the IDE library path of the platform </summary>
+function _TryGetLibraryPathResponseFile(const ARADStudioInfo: TRADStudioInfo; const AConfig: TProjectConfig; const APlatform: TProjectPlatform; const AProjectFileName: string; out AResponseFileName: string): Boolean; forward;
 
 function _GetMSBuildParams(const AConfig: TProjectConfig; const APlatform: TProjectPlatform; const ACustomParameter: string): string;
 begin
   Result := Format('/p:Config=%s /p:Platform=%s /p:DCC_BuildAllUnits=true', [GetProjectConfigName(AConfig), GetProjectPlatformName(APlatform)]);
   if ACustomParameter <> '' then
     Result := Result + Format(' /p:%s', [ACustomParameter]);
+end;
+
+function _TryGetLibraryPathResponseFile(const ARADStudioInfo: TRADStudioInfo; const AConfig: TProjectConfig; const APlatform: TProjectPlatform; const AProjectFileName: string; out AResponseFileName: string): Boolean;
+var
+  LLibraryPath, LBaseName: string;
+  LLines: TArrayOfString;
+begin
+  // A command-line MSBuild takes DelphiLibraryPath (the -U of dcc32, where the required
+  // packages' .dcp are searched) from %APPDATA%\Embarcadero\BDS\<ver>\EnvOptions.proj, a
+  // file the IDE rewrites when its options are saved. When that file is stale a package
+  // requiring a third-party .dcp (e.g. Skia4Delphi) builds in the IDE but fails here with
+  // E2202 "Required package not found". Passing the registry library path as a global
+  // property makes the build use the same paths as the IDE.
+  Result := False;
+  AResponseFileName := '';
+  LLibraryPath := GetRADStudioLibrarySearchPathForMSBuild(ARADStudioInfo.Version, APlatform, AConfig);
+  if LLibraryPath = '' then
+  begin
+    Log(Format('RADStudio.Build._TryGetLibraryPathResponseFile: no library path in the registry for %s %s, EnvOptions.proj will be used', [ARADStudioInfo.Version.Name, GetProjectPlatformName(APlatform)]));
+    Exit;
+  end;
+  // In a /p value ';' separates property assignments: MSBuild wants it escaped as %3B.
+  // The DCC task quotes by itself the entries containing spaces when it builds -U.
+  StringChangeEx(LLibraryPath, '"', '', True);
+  StringChangeEx(LLibraryPath, ';', '%3B', True);
+  SetArrayLength(LLines, 1);
+  LLines[0] := Format('/p:DelphiLibraryPath="%s"', [LLibraryPath]);
+  LBaseName := ChangeFileExt(ExtractFileName(AProjectFileName), '');
+  AResponseFileName := ExpandConstant('{tmp}\') + Format('%s.%s.%s.%s.rsp', [LBaseName,
+    ARADStudioInfo.Version.RegVersion, GetProjectPlatformName(APlatform), GetProjectConfigName(AConfig)]);
+  Result := SaveStringsToUTF8File(AResponseFileName, LLines, False);
+  if Result then
+    Log(Format('RADStudio.Build._TryGetLibraryPathResponseFile: "%s" = %s', [AResponseFileName, LLines[0]]))
+  else
+    Log(Format('RADStudio.Build._TryGetLibraryPathResponseFile: failed to write "%s"', [AResponseFileName]));
 end;
 
 function GetPlatformsAllowedToBuild(const ARADStudioInfo: TRADStudioInfo): TProjectPlatforms;
@@ -193,15 +230,18 @@ function _TryGetBuildCommand(const ARADStudioInfo: TRADStudioInfo; const AConfig
 var
   LFrameworkDir: string;
   LResultCode: Integer;
-  LRSVarsBatchFileName: string;
+  LRSVarsBatchFileName, LParams, LResponseFileName: string;
 begin
   Result := TryGetRADStudioRSVarsBatchFileName(ARADStudioInfo, LRSVarsBatchFileName);
   if not Result then
     TryShowErrorFmt(CustomMessage('RADStudioBuildErrorCantFoundRSVars'), [LRsVarsBatchFileName, ARADStudioInfo.Version.Name])
   else
   begin
+    LParams := _GetMSBuildParams(AConfig, APlatform, ACustomParameter);
+    if _TryGetLibraryPathResponseFile(ARADStudioInfo, AConfig, APlatform, AProjectFileName, LResponseFileName) then
+      LParams := LParams + Format(' @"%s"', [LResponseFileName]);
     if Exec(ExpandConstant('{cmd}'), Format('/C ""%s" && MSBuild /version>nul 2>&1"', [LRSVarsBatchFileName]), '', SW_HIDE, ewWaitUntilTerminated, LResultCode) and (LResultCode = 0) then
-      ACommand := Format('""%s" && MSBuild "%s" %s>"%s" 2>&1"', [LRSVarsBatchFileName, AProjectFileName, _GetMSBuildParams(AConfig, APlatform, ACustomParameter), ALogFileName])
+      ACommand := Format('""%s" && MSBuild "%s" %s>"%s" 2>&1"', [LRSVarsBatchFileName, AProjectFileName, LParams, ALogFileName])
     else
     begin
       Result := IsDotNetInstalled(ARADStudioInfo.Version.DotNetVersion, ARADStudioInfo.Version.DotNetServicePack);
@@ -218,7 +258,7 @@ begin
           net35: LFrameworkDir := ExpandConstant('{dotnet20}');
           net45: LFrameworkDir := ExpandConstant('{dotnet40}');
         end;
-        ACommand := Format('""%s" && @set "FrameworkDir=%s" && @set "PATH=%s;%%PATH%%" && MSBuild "%s" %s>"%s" 2>&1"', [LRSVarsBatchFileName, LFrameworkDir, LFrameworkDir, AProjectFileName, _GetMSBuildParams(AConfig, APlatform, ACustomParameter), ALogFileName]);
+        ACommand := Format('""%s" && @set "FrameworkDir=%s" && @set "PATH=%s;%%PATH%%" && MSBuild "%s" %s>"%s" 2>&1"', [LRSVarsBatchFileName, LFrameworkDir, LFrameworkDir, AProjectFileName, LParams, ALogFileName]);
       end;
     end;
   end;

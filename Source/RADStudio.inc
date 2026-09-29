@@ -111,6 +111,12 @@ function TryRemoveRADStudioLibraryDebugDCUPath(const ARADStudioVersion: TRADStud
 function TryRemoveRADStudioLibrarySearchPath(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const APath: string): Boolean; forward;
 /// <summary> Try to remove a path to the PATH environment variable exclusive of RAD Studio application </summary>
 function TryRemoveRADStudioPathEnvVariable(const ARADStudioVersion: TRADStudioVersion; const APath: string): Boolean; forward;
+/// <summary> Library search path of the IDE for a platform and config, as MSBuild needs it in a
+/// global property: read from the registry (the same source the IDE compiles with) with every
+/// "$(NAME)" macro expanded (RAD Studio variables from environment.proj, the IDE-only ones from
+/// Tools > Options > Environment Variables, Platform and Config); entries that cannot be
+/// expanded are dropped. Empty when the registry has no library path. </summary>
+function GetRADStudioLibrarySearchPathForMSBuild(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const AConfig: TProjectConfig): string; forward;
 /// <summary> Try to unregister a Bpl in RAD Studio </summary>
 function TryUnregisterRADStudioBpl(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const ABplFileName: string): Boolean; forward;
 
@@ -765,6 +771,101 @@ function TryAddRADStudioLibrarySearchPath(const ARADStudioVersion: TRADStudioVer
   const APos: Integer): Boolean;
 begin
   Result := _TryAddRADStudioLibraryPath(ARADStudioVersion, APlatform, 'Search Path', APath, APos);
+end;
+
+/// <summary> Replace "$(AName)" in AText, whatever the case of the macro name </summary>
+procedure _ExpandMacro(var AText: string; const AName, AValue: string);
+begin
+  StringChangeEx(AText, '$(' + AName + ')', AValue, True);
+  StringChangeEx(AText, '$(' + Uppercase(AName) + ')', AValue, True);
+  StringChangeEx(AText, '$(' + Lowercase(AName) + ')', AValue, True);
+end;
+
+/// <summary> Expand in AText the "$(NAME)" macros of every variable listed in the IDE's
+/// environment.proj (the RAD Studio ones like $(BDS), $(BDSLIB), $(BDSCOMMONDIR) and the
+/// environment of the IDE process) </summary>
+procedure _ExpandRADStudioEnvironmentVars(const ARADStudioVersion: TRADStudioVersion; var AText: string);
+var
+  LXMLDocument, LNodes, LNode: Variant;
+  LFileName, LValue: string;
+  I: Integer;
+begin
+  LFileName := ExpandConstant(Format('{userappdata}\Embarcadero\BDS\%s\environment.proj', [ARADStudioVersion.RegVersion]));
+  if not FileExists(LFileName) then
+  begin
+    Log(Format('RADStudio._ExpandRADStudioEnvironmentVars: "%s" not found', [LFileName]));
+    Exit;
+  end;
+  try
+    LXMLDocument := CreateOleObject('Msxml2.DOMDocument');
+    LXMLDocument.Async := False;
+    LXMLDocument.ResolveExternals := False;
+    LXMLDocument.Load(LFileName);
+    if LXMLDocument.ParseError.ErrorCode <> 0 then
+    begin
+      Log(Format('RADStudio._ExpandRADStudioEnvironmentVars: error parsing "%s" (code %d)', [LFileName, LXMLDocument.ParseError.ErrorCode]));
+      Exit;
+    end;
+    LNodes := LXMLDocument.selectNodes('/Project/PropertyGroup/*');
+    for I := 0 to LNodes.length - 1 do
+    begin
+      LNode := LNodes.item(I);
+      LValue := LNode.text;
+      if (Pos('$(', LValue) = 0) and (Pos('$(', AText) > 0) then
+        _ExpandMacro(AText, LNode.nodeName, RemoveBackslash(LValue));
+    end;
+  except
+    Log(Format('RADStudio._ExpandRADStudioEnvironmentVars: error reading "%s": %s', [LFileName, GetExceptionMessage]));
+  end;
+end;
+
+function GetRADStudioLibrarySearchPathForMSBuild(const ARADStudioVersion: TRADStudioVersion; const APlatform: TProjectPlatform; const AConfig: TProjectConfig): string;
+var
+  LKey, LValue, LPath: string;
+  LNames, LEntries: TArrayOfString;
+  I: Integer;
+begin
+  Result := '';
+  LKey := GetRADStudioRegKey(ARADStudioVersion) + '\Library\' + GetProjectPlatformLibraryName(APlatform);
+  if not RegQueryStringValue(HKEY_CURRENT_USER, LKey, 'Search Path', LPath) or (LPath = '') then
+    Exit;
+  // MSBuild does not evaluate $() references inside a global property: everything the IDE
+  // would expand must be expanded here.
+  _ExpandMacro(LPath, 'Platform', GetProjectPlatformName(APlatform));
+  _ExpandMacro(LPath, 'Config', GetProjectConfigName(AConfig));
+  _ExpandRADStudioEnvironmentVars(ARADStudioVersion, LPath);
+  // The variables defined in the IDE only (Tools > Options > Environment Variables)
+  LKey := GetRADStudioRegKey(ARADStudioVersion) + '\Environment Variables';
+  if RegGetValueNames(HKEY_CURRENT_USER, LKey, LNames) then
+  begin
+    for I := 0 to GetArrayLength(LNames) - 1 do
+    begin
+      if (LNames[I] <> '') and RegQueryStringValue(HKEY_CURRENT_USER, LKey, LNames[I], LValue) then
+        _ExpandMacro(LPath, LNames[I], RemoveBackslash(LValue));
+    end;
+  end;
+  // Drop what is still unresolved: a broken entry (e.g. "\release") is worse than a missing one.
+  // No quotes and no trailing backslash: the value is passed to MSBuild between double quotes
+  // and a final backslash would escape the closing quote ("odd number of double-quote
+  // characters" from the DCC task, seen with a CatalogRepository entry ending with "\").
+  LEntries := SplitString(LPath, ';');
+  for I := 0 to GetArrayLength(LEntries) - 1 do
+  begin
+    LValue := Trim(LEntries[I]);
+    StringChangeEx(LValue, '"', '', True);
+    LValue := RemoveBackslash(LValue);
+    if LValue = '' then
+      Continue;
+    if Pos('$(', LValue) > 0 then
+    begin
+      Log(Format('RADStudio.GetRADStudioLibrarySearchPathForMSBuild: dropped the unresolved library path entry "%s"', [LValue]));
+      Continue;
+    end;
+    if Result = '' then
+      Result := LValue
+    else
+      Result := Result + ';' + LValue;
+  end;
 end;
 
 function TryAddRADStudioPathEnvVariable(const ARADStudioVersion: TRADStudioVersion; const APath: string): Boolean;
